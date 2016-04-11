@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/gorilla/websocket"
-	"github.com/nicolas-nannoni/fingy-server/events"
-	"github.com/nicolas-nannoni/fingy-server/services"
 	"github.com/satori/go.uuid"
 	"log"
 	"net/http"
@@ -21,7 +18,7 @@ const (
 
 var upgrader = websocket.Upgrader{}
 
-func socketHandler(deviceId string, w http.ResponseWriter, r *http.Request) {
+func socketHandler(serviceId string, deviceId string, w http.ResponseWriter, r *http.Request) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -29,68 +26,21 @@ func socketHandler(deviceId string, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection := connection{id: uuid.NewV1(), deviceId: deviceId, ws: ws, send: make(chan []byte)}
-	reg.register <- &connection
-
-	go connection.readLoop()
-	go connection.writeLoop()
-}
-
-func (c *connection) write(mt int, payload []byte) error {
-	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-	return c.ws.WriteMessage(mt, payload)
-}
-
-func (c *connection) close() {
-	c.write(websocket.CloseMessage, []byte{})
-	close(c.send)
-}
-
-func (c *connection) writeLoop() {
-Loop:
-	for {
-		select {
-		case message, ok := <-c.send:
-			if !ok {
-				break Loop
-			}
-			if err := c.write(websocket.TextMessage, message); err != nil {
-				log.Fatalf("Error while sending message to connection %s", c)
-				return
-			}
-		}
+	connection := connection{
+		id:        uuid.NewV1(),
+		deviceId:  deviceId,
+		serviceId: serviceId,
+		ws:        ws,
+		send:      make(chan []byte),
 	}
-	log.Printf("Write loop closed %s", c)
-}
 
-func (c *connection) readLoop() {
-
-	c.ws.SetReadLimit(maxMessageSize)
-
-	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				log.Printf("Error in connection %s: %v", c, err)
-				reg.unregisterConnection(c)
-			}
-			break
-		}
-		c.dispatchReceivedMessage(message)
-	}
-	log.Printf("Read loop closed %s", c)
-}
-
-func (c *connection) dispatchReceivedMessage(msg []byte) {
-
-	log.Printf("Received message: %s on connection %s", msg, c)
-	var evt events.Event
-	err := json.Unmarshal(msg, &evt)
+	err = Registry.registerConnection(&connection)
 	if err != nil {
 		log.Print(err)
+		connection.Close()
 		return
 	}
 
-	resp, err := services.Registry.Dispatch(&evt)
-	log.Printf("Response: %v, error: %v", resp, err)
+	go connection.ReadLoop()
+	go connection.WriteLoop()
 }

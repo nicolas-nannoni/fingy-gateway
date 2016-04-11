@@ -17,15 +17,20 @@ type Event struct {
 	Payload interface{} `payload`
 }
 
+// Populate extra event fields, such as its id and a creation timestamp
 func (evt *Event) PrepareForSend() {
 	evt.Id = uuid.NewV1()
 	evt.SendTimestamp = time.Now()
 }
 
+// Verify that the event is valid and can be sent/processed
 func (evt *Event) Verify() (err error) {
 
 	if evt.Path == "" {
 		return fmt.Errorf("Events should have a path set")
+	}
+	if evt.ServiceId == "" {
+		return fmt.Errorf("Events should have a serviceId set")
 	}
 	return
 }
