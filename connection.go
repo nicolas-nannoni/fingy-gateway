@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
 	"github.com/nicolas-nannoni/fingy-gateway/events"
 	"github.com/satori/go.uuid"
-	"log"
 	"time"
 )
 
@@ -42,12 +42,12 @@ Loop:
 				break Loop
 			}
 			if err := c.write(websocket.TextMessage, message); err != nil {
-				log.Fatalf("Error while sending message to connection %s", c)
+				log.Errorf("Error while sending message to connection %s", c)
 				return
 			}
 		}
 	}
-	log.Printf("Write loop closed %s", c)
+	log.Debugf("Write loop closed %s", c)
 }
 
 func (c *connection) ReadLoop() {
@@ -58,14 +58,14 @@ func (c *connection) ReadLoop() {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				log.Printf("Error in connection %s: %v", c, err)
+				log.Errorf("Error in connection %s: %v", c, err)
 				Registry.unregisterConnection(c)
 			}
 			break
 		}
 		c.dispatchReceivedMessage(message)
 	}
-	log.Printf("Read loop closed %s", c)
+	log.Debugf("Read loop closed %s", c)
 }
 
 func (c *connection) write(mt int, payload []byte) error {
@@ -75,14 +75,14 @@ func (c *connection) write(mt int, payload []byte) error {
 
 func (c *connection) dispatchReceivedMessage(msg []byte) {
 
-	log.Printf("Received message: %s on connection %s", msg, c)
+	log.Debugf("Received message: %s on connection %s", msg, c)
 	var evt events.Event
 	err := json.Unmarshal(msg, &evt)
 	if err != nil {
-		log.Print(err)
+		log.Error(err)
 		return
 	}
 
 	resp, err := Registry.Dispatch(c.serviceId, c.deviceId, &evt)
-	log.Printf("Response: %v, error: %v", resp, err)
+	log.Debugf("Response: %v, error: %v", resp, err)
 }

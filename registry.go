@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/nicolas-nannoni/fingy-gateway/events"
 	"github.com/parnurzeal/gorequest"
-	"log"
 	"net/url"
 )
 
@@ -77,7 +77,7 @@ func (s *Service) SendToDevice(deviceId string, evt *events.Event) (err error) {
 	if err != nil {
 		return fmt.Errorf("The event %s could not be serialized to JSON: %v", evt, err)
 	}
-	log.Printf("Pushing message %s to send queue of %s", msg, c)
+	log.Debugf("Pushing message %s to send queue of %s", msg, c)
 	c.send <- msg
 
 	return
@@ -115,7 +115,7 @@ func (s *Service) send(evt *events.Event, deviceId string) (response string, err
 // Register a connection (device)
 func (r *registry) registerConnection(c *connection) (err error) {
 
-	log.Printf("Registering connection %s", c)
+	log.Infof("Registering connection %s", c)
 
 	s := r.getServiceForConnection(c)
 	if s == nil {
@@ -124,7 +124,7 @@ func (r *registry) registerConnection(c *connection) (err error) {
 	}
 
 	if existingConn, ok := s.deviceRegistry[c.deviceId]; ok {
-		log.Printf("Existing registration for device %s. Closing old connection %s", c.deviceId, existingConn)
+		log.Debugf("Existing registration for device %s. Closing old connection %s", c.deviceId, existingConn)
 		r.unregisterConnection(existingConn)
 	}
 
@@ -142,7 +142,7 @@ func (r *registry) unregisterConnection(c *connection) (err error) {
 	}
 
 	if existingConn, ok := s.deviceRegistry[c.deviceId]; ok && existingConn.id == c.id {
-		log.Printf("Unregistering connection %s", c)
+		log.Infof("Unregistering connection %s", c)
 		delete(s.deviceRegistry, c.deviceId)
 		c.Close()
 		return

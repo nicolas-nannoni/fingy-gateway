@@ -1,9 +1,9 @@
 package main
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/nicolas-nannoni/fingy-gateway/events"
-	"log"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func main() {
 	<-c.C
 
 	if err := Registry.SendToDevice("alfred", "uuid.NewV1()", &events.Event{Path: "/hello/123"}); err != nil {
-		log.Print(err)
+		log.Error(err)
 	}
 
 	select {}
