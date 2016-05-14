@@ -9,7 +9,7 @@ func SetupServiceSideGateway() {
 
 	r := gin.Default()
 	r.GET("/", index)
-	r.GET("/service/:serviceId/sendEvent/device/:deviceId/*path", sendEventToDevice)
+	r.POST("/service/:serviceId/sendEvent/device/:deviceId/*path", sendEventToDevice)
 
 	r.Run(":8090")
 }

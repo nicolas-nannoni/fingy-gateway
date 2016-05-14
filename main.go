@@ -3,8 +3,6 @@ package main
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
-	"github.com/nicolas-nannoni/fingy-gateway/events"
-	"time"
 )
 
 func main() {
@@ -16,13 +14,6 @@ func main() {
 	go router.Run()
 	go SetupServiceSideGateway()
 
-	c := time.NewTimer(time.Second * 10)
-	<-c.C
-
-	if err := Registry.SendToDevice("alfred", "uuid.NewV1()", &events.Event{Path: "/hello/123"}); err != nil {
-		log.Error(err)
-	}
-
 	select {}
 }
 
@@ -31,5 +22,5 @@ func socket(c *gin.Context) {
 }
 
 func registerServices() {
-	Registry.RegisterService(&Service{Id: "alfred", Host: "localhost:8081"})
+	Registry.RegisterService(&Service{Id: "alfred", Host: "localhost:8092"})
 }

@@ -106,8 +106,10 @@ func (r *registry) getServiceForConnection(c *connection) (service *Service) {
 func (s *Service) send(evt *events.Event, deviceId string) (response string, errs []error) {
 
 	request := gorequest.New()
-	u := url.URL{Scheme: "http", Host: s.Host, Path: fmt.Sprintf("/device/%s%s", deviceId, evt.Path)}
-	_, body, errs := request.Get(u.String()).End()
+	u := url.URL{Scheme: "http", Host: s.Host, Path: fmt.Sprintf("/devices/%s%s", deviceId, evt.Path)}
+	resp, body, errs := request.Get(u.String()).End()
+
+	log.Debugf("Response from service %s: %s", s, resp)
 
 	return body, errs
 }
